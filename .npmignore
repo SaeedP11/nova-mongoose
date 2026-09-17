@@ -1,4 +1,6 @@
 **/*
 !dist/**
+# A tsc incremental build cache, ~200kB and of no use to a consumer.
+dist/*.tsbuildinfo
 !package.json
 !README.md
