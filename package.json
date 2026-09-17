@@ -1,0 +1,50 @@
+{
+  "name": "nova-mongoose",
+  "version": "1.0.0",
+  "description": "Generic Mongoose CRUD data layer for NestJS",
+  "keywords": [
+    "mongoose",
+    "nestjs",
+    "crud",
+    "soft-delete",
+    "pagination"
+  ],
+  "author": "saeedp11",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npx tsc --build",
+    "format": "prettier --write \"**/*.ts\""
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/mongoose": "^10.1.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "mongoose": "^8.7.2",
+    "mongoose-paginate-v2": "^1.8.5",
+    "reflect-metadata": "^0.2.0"
+  },
+  "devDependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/mongoose": "^10.1.0",
+    "@types/lodash": "^4.17.12",
+    "@types/node": "^20.3.1",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "mongoose": "^8.7.2",
+    "mongoose-paginate-v2": "^1.8.5",
+    "prettier": "^3.0.0",
+    "reflect-metadata": "^0.2.0",
+    "typescript": "^5.1.3"
+  }
+}

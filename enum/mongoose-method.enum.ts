@@ -1,0 +1,16 @@
+export enum MongooseMethod {
+  CREATE = 'create',
+  CREATE_MANY = 'createMany',
+  UPDATE = 'update',
+  UPDATE_MANY = 'updateMany',
+  DELETE = 'delete',
+  DELETE_MANY = 'deleteMany',
+  RESTORE = 'restore',
+  FIND = 'find',
+  FIND_ALL = 'findAll',
+  FIND_ONE = 'findOne',
+  FIND_BY_ID = 'findById',
+  PAGINATE = 'paginate',
+  COUNT = 'count',
+  EXISTS = 'exists',
+}
