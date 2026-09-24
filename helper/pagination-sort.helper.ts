@@ -17,6 +17,24 @@ const TIEBREAKER_FIELD = '_id';
  * come back on two pages while another is never returned.
  */
 export function toSortObject(sort?: PaginationSort): SortObject {
+  const sortObject = parseSort(sort);
+
+  // Newest first is the only ordering every entity can offer, `createdAt`
+  // being declared on BaseEntity
+  if (!Object.keys(sortObject).length) sortObject.createdAt = -1;
+
+  if (!(TIEBREAKER_FIELD in sortObject)) sortObject[TIEBREAKER_FIELD] = -1;
+
+  return sortObject;
+}
+
+/**
+ * Only the paths the caller asked for, without the default or the
+ * tiebreaker, which is what has to be checked against the filterable props.
+ * `id` is sorted as `_id`, the same mapping `ModifyArgument` applies to
+ * filters: no stored document has an `id` path.
+ */
+export function parseSort(sort?: PaginationSort): SortObject {
   const sortObject: SortObject = {};
 
   for (const token of String(sort ?? '')
@@ -24,14 +42,8 @@ export function toSortObject(sort?: PaginationSort): SortObject {
     .filter(Boolean)) {
     const direction: SortOrder = token.startsWith('-') ? -1 : 1;
     const path = token.replace(/^[+-]/, '');
-    if (path) sortObject[path] = direction;
+    if (path) sortObject[path === 'id' ? '_id' : path] = direction;
   }
-
-  // Newest first is the only ordering every entity can offer, `createdAt`
-  // being declared on BaseEntity
-  if (!Object.keys(sortObject).length) sortObject.createdAt = -1;
-
-  if (!(TIEBREAKER_FIELD in sortObject)) sortObject[TIEBREAKER_FIELD] = -1;
 
   return sortObject;
 }

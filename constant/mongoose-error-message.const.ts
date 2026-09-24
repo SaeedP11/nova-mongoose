@@ -19,6 +19,8 @@ export const MongooseErrorMessage = {
     `value of the filter on field ${field} must be ${expected}`,
   unfilterableField: (field: string, modelName: string) =>
     `${field} is not a filterable field of ${modelName}`,
+  unsortableField: (field: string, modelName: string) =>
+    `${field} is not a sortable field of ${modelName}`,
   filterValueTooLong: (field: string, max: number) =>
     `value of the filter on field ${field} must be at most ${max} characters`,
   emptyBulkPayload: (methodName: string) =>

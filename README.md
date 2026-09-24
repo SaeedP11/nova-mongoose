@@ -71,5 +71,29 @@ Soft delete is the default everywhere: every read injects `isDeleted: false`, `d
 sets the flag, `force: true` does a real delete, `withDeleted: true` reads flagged rows
 and `restore()` clears the flag.
 
+A plain `{ unique: true }` index keeps holding a soft deleted document's value, so the
+same value cannot be used again until the row is force deleted. Scope unique indexes to
+the documents that are not deleted instead:
+
+```ts
+UserSchema.index(
+  { phoneNumber: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } },
+);
+```
+
+`restore()` then raises a `ConflictException` if a live document has since taken the
+value. MongoDB before 5.0 refuses a second index on the same keys, so an existing plain
+unique index has to be dropped before the scoped one can be built.
+
+`update()` and `updateMany()` run the schema validators (`runValidators: true`) unless the
+call passes `runValidators: false`, so an update cannot store what `create()` would have
+refused.
+
+`paginate()` parses `sort` (`-field` descending, `+field` ascending, `id` meaning `_id`)
+and holds it to the same allowlist as `simpleFilter`: an unknown field, `owner` or
+`isDeleted` is a `BadRequestException`. The default `-createdAt` and the `_id` tiebreaker
+are always allowed, and `baseEntityIndexesPlugin` indexes exactly that order.
+
 Controllers get `FilterController()`, `FilterOptionsDto`, `PaginationOptionsDto` and
 `PaginationDto` for list endpoints.

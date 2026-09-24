@@ -1,5 +1,5 @@
 import { ClassConstructor, ClassTransformOptions } from 'class-transformer';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   ClientSession,
   Document,
@@ -33,6 +33,7 @@ import { PopulateOptions } from './type/populate-options.type';
 import PopulateDocument from './decorator/populate-document.decorator';
 import { FindAllOptions } from './type/find-all-options.type';
 import { PaginateOptions } from './type/paginate-options.type';
+import { PaginationSort } from './type/pagination-sort.type';
 import { IPagination } from './interface/pagination.interface';
 import {
   IDeleteManyResult,
@@ -40,8 +41,11 @@ import {
 } from './interface/bulk-result.interface';
 import SaveDocument from './decorator/save-document.decorator';
 import SimpleFilter from './decorator/simple-filter.decorator';
-import { resolveFilterableProps } from './helper/filterable-props.helper';
-import { toSortObject } from './helper/pagination-sort.helper';
+import {
+  isFilterableField,
+  resolveFilterableProps,
+} from './helper/filterable-props.helper';
+import { parseSort, toSortObject } from './helper/pagination-sort.helper';
 import { DEFAULT_SERIALIZER_OPTIONS } from './constant/serializer-options.const';
 
 export class MongooseService<
@@ -111,6 +115,22 @@ export class MongooseService<
 
   private withSession<T>(options: T, session?: ClientSession): T {
     return (session ? { ...options, session } : options) as T;
+  }
+
+  /**
+   * `sort` arrives from the query string just like `simpleFilter`, and is held
+   * to the same allowlist: sorting on a prop that is not meant to be read
+   * leaks its order, and sorting on an unindexed one sorts the whole match in
+   * memory. The default sort and the `_id` tiebreaker are not the caller's
+   * and are not checked.
+   */
+  private assertSortableFields(sort?: PaginationSort): void {
+    for (const path of Object.keys(parseSort(sort))) {
+      if (!isFilterableField(this.filterableProps, path))
+        throw new BadRequestException(
+          MongooseErrorMessage.unsortableField(path, this.model.modelName),
+        );
+    }
   }
 
   async create({
@@ -320,6 +340,9 @@ export class MongooseService<
         {
           ...options,
           new: options?.new ?? true,
+          // Mongoose only validates on `save` unless told otherwise, so an
+          // update could store what `create` would have refused
+          runValidators: options?.runValidators ?? true,
         },
         session,
       ),
@@ -341,7 +364,10 @@ export class MongooseService<
     const result = await this.model.updateMany(
       this.scopeFilter(filter, withDeleted),
       update,
-      this.withSession(options ?? {}, session),
+      this.withSession(
+        { ...options, runValidators: options?.runValidators ?? true },
+        session,
+      ),
     );
 
     return {
@@ -496,9 +522,13 @@ export class MongooseService<
    * The counterpart of a soft `delete`. It only ever matches a document that
    * is currently flagged, so restoring twice is a miss rather than a no-op
    * that pretends to have done something.
+   *
+   * A unique index scoped to `isDeleted: false` lets a live document take the
+   * value a deleted one held, and restoring the deleted one then collides.
    */
   @DocumentToDto()
   @PopulateDocument()
+  @CatchDuplicateDocument()
   @CatchNotFoundDocument()
   @ModifyArgument()
   async restore<
@@ -793,6 +823,8 @@ export class MongooseService<
     MongooseCommonOptions<ToDto>): Promise<
     IPagination<ToInterface> | IPagination<Document<unknown, any, Entity>>
   > {
+    this.assertSortableFields(sort);
+
     const result = await this.model.paginate(
       this.scopeFilter(filter, withDeleted),
       {
